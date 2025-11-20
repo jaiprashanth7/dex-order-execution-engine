@@ -8,7 +8,9 @@ import { updateOrderStatus } from '../models/orderModel';
 const connection = new IORedis({
   host: config.redis.host,
   port: config.redis.port,
-  maxRetriesPerRequest: null
+  password: process.env.REDIS_PASSWORD,        // <── add this
+  maxRetriesPerRequest: null,
+  tls: process.env.REDIS_TLS === '1' ? {} : undefined
 });
 
 export function startOrderWorker() {
