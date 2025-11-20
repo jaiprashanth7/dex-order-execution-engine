@@ -7,13 +7,20 @@ export const config = {
   port: Number(process.env.PORT) || 3000,
 
   // Redis: prefer REDIS_URL if present, otherwise host/port/password
-  redis: {
-    url: process.env.REDIS_URL, // e.g. redis://default:password@host:port
-    host: process.env.REDIS_HOST || (isProd ? undefined : '127.0.0.1'),
-    port: process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : (isProd ? undefined : 6379),
+//   redis: {
+//     url: process.env.REDIS_URL, // e.g. redis://default:password@host:port
+//     host: process.env.REDIS_HOST || (isProd ? undefined : '127.0.0.1'),
+//     port: process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : (isProd ? undefined : 6379),
     
-    password: process.env.REDIS_PASSWORD || undefined
+//     password: process.env.REDIS_PASSWORD || undefined
+//   },
+  redis: {
+    host: process.env.REDIS_HOST!,
+    port: Number(process.env.REDIS_PORT),
+    password: process.env.REDIS_PASSWORD!,
+    tls: {}
   },
+  
 
   // Postgres (Railway Postgres envs will override these defaults)
   pg: {
