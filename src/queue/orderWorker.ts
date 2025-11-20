@@ -13,11 +13,14 @@ import { updateOrderStatus } from '../models/orderModel';
 //   maxRetriesPerRequest: null,
 //   tls: process.env.REDIS_TLS === '1' ? {} : undefined
 // });
-const connection = new IORedis({
-    host: config.redis.host,
-    port: config.redis.port,
-    password: config.redis.password,
-    tls: {}
+// const connection = new IORedis({
+//     host: config.redis.host,
+//     port: config.redis.port,
+//     password: config.redis.password,
+//     tls: {}
+//   });
+const connection = new IORedis(process.env.REDIS_URL as string, {
+    maxRetriesPerRequest: null,
   });
   
 
