@@ -2,23 +2,13 @@ import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 import { config } from '../config';
 
-// const connection = new IORedis({
-//   host: config.redis.host,                     // from REDIS_HOST
-//   port: config.redis.port,                     // from REDIS_PORT
-//   password: process.env.REDIS_PASSWORD, // from REDIS_PASSWORD (Railway Redis)
-//   //password: config.redis.password,
-// //   password: process.env.REDIS_PASSWORD,   
-//   maxRetriesPerRequest: null,                  // required by BullMQ v5
-//   // if your Railway Redis requires TLS, set REDIS_TLS=1 in env and this will enable it
-//   tls: process.env.REDIS_TLS === '1' ? {} : undefined
-// });
 const connection = new IORedis({
-    host: config.redis.host,
-    port: config.redis.port,
-    password: config.redis.password,
-    tls: {}
-  });
-  
+  host: config.redis.host,
+  port: config.redis.port,
+  password: config.redis.password,
+  tls: config.redis.tls,
+  maxRetriesPerRequest: null
+});
 
 export interface OrderJobData {
   orderId: string;
