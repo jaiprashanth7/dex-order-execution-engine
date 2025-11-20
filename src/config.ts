@@ -6,7 +6,8 @@ const isProd = process.env.NODE_ENV === 'production';
 export const config = {
   port: Number(process.env.PORT) || 3000,
 
-  redisUrl: process.env.REDIS_URL, // <-- IMPORTANT: use a flat key
+  // Use the full Redis URL from Render (includes username + password)
+  redisUrl: process.env.REDIS_URL,
 
   pg: {
     host: process.env.PGHOST || (isProd ? undefined : '127.0.0.1'),

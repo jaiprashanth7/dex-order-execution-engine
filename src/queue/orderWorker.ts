@@ -5,12 +5,10 @@ import { dexRouter } from '../services/dexRouter';
 import { sendOrderStatus } from '../websocket/orderWs';
 import { updateOrderStatus } from '../models/orderModel';
 
-//
-// IMPORTANT: Use the SAME Redis connection style as orderQueue.ts
-//
+// Use the Redis internal URL directly
+// NO TLS, because redis:// does not support TLS
 const connection = new IORedis(config.redisUrl!, {
-  maxRetriesPerRequest: null,
-  tls: config.redisUrl?.startsWith('rediss://') ? {} : undefined
+  maxRetriesPerRequest: null
 });
 
 export function startOrderWorker() {
@@ -47,7 +45,7 @@ export function startOrderWorker() {
           data: { selectedDex: best.dex, quotes: all }
         });
 
-        // simulate tx building
+        // simulate building tx
         sendOrderStatus(orderId, { status: 'submitted' });
         await updateOrderStatus(orderId, 'submitted');
 
@@ -84,7 +82,7 @@ export function startOrderWorker() {
           data: { error: err?.message || 'unknown error' }
         });
 
-        throw err; // BullMQ retry
+        throw err; // retry via BullMQ
       }
     },
     {

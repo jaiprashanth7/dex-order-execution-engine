@@ -9,14 +9,11 @@ export interface OrderJobData {
   amount: number;
 }
 
-// ---- IMPORTANT PART ----
-// Use the REDIS_URL directly.
-// Render gives a URL like:
-// rediss://default:PASSWORD@HOST:PORT
-// -------------------------
+// Use Redis internal URL directly.
+// DO NOT USE TLS for redis:// connections.
 const connection = new IORedis(config.redisUrl!, {
   maxRetriesPerRequest: null,
-  tls: config.redisUrl?.startsWith('rediss://') ? {} : undefined
+  // 🚫 No TLS for internal Redis
 });
 
 export const orderQueue = new Queue<OrderJobData>('orders', { connection });
