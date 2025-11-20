@@ -8,7 +8,8 @@ import { updateOrderStatus } from '../models/orderModel';
 const connection = new IORedis({
   host: config.redis.host,
   port: config.redis.port,
-  password: process.env.REDIS_PASSWORD,        // <── add this
+  //password: process.env.REDIS_PASSWORD,        // <── add this
+  password: config.redis.password, 
   maxRetriesPerRequest: null,
   tls: process.env.REDIS_TLS === '1' ? {} : undefined
 });
