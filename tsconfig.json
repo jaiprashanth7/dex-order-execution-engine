@@ -4,10 +4,10 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "outDir": "dist",
-    "rootDir": ".",         // 👈 changed from "src" to "."
     "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src", "tests"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "tests"]
 }
