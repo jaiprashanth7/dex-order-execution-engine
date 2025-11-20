@@ -1,157 +1,90 @@
-DEX Order Execution Engine (Mock, Market Orders)
+DEX Order Execution Engine (Mock Implementation)
 Overview
 
-This project implements a mock order execution engine similar to those used by decentralized exchanges (DEXs) on the Solana network. It supports market order execution, DEX routing, real-time WebSocket status updates, and asynchronous order processing through BullMQ.
+This project implements a simplified order execution engine inspired by Solana-based DEX workflows. It supports market order execution, routing across Raydium and Meteora, and real-time WebSocket updates.
+All DEX interactions are fully mocked to provide deterministic behavior while focusing on system design, queueing, and event-driven architecture.
 
-The implementation is intentionally lightweight and focuses on system architecture, routing logic, and execution flow.
-All blockchain interactions (Raydium, Meteora) are mocked to maximize reliability and reproducibility.
+Key Features
 
-Order Type Implemented: MARKET
-Reason for Choosing Market Orders:
-Market orders best demonstrate the full order-processing pipeline end-to-end—price routing, queueing, retries, and live updates—without additional complexity such as price triggers or on-chain event monitoring.
+Market order processing with full lifecycle tracking
 
-How the Engine Can Be Extended
+Raydium/Meteora mock routing with quote variation and slippage checks
 
-Limit Orders: Store target price in the database and run a periodic price-checker job. Once the market/DEX price reaches the limit threshold, enqueue the order for execution.
+WebSocket streaming of execution status
 
-Sniper Orders: Add a listener for new pool creation or token mint events. When a token launch event or liquidity pool becomes active, automatically enqueue the order.
+BullMQ worker with concurrency, retries, and exponential backoff
 
-Features
+PostgreSQL persistence for all order states and outcomes
 
-Market order execution flow
+Modular TypeScript codebase following separation of concerns
 
-Raydium and Meteora mock DEX routing
+Architecture Summary
 
-WebSocket streaming for order lifecycle updates
-
-BullMQ queue with concurrency, retry logic, and exponential backoff
-
-PostgreSQL-based order history and error persistence
-
-Redis-backed job queue and scalable architecture
-
-Clear modular structure using TypeScript
-
-System Architecture
-1. Order Submission (HTTP)
-
-Endpoint:
+HTTP Order Submission
 
 POST /api/orders/execute
 
+Creates order in PostgreSQL (status: pending)
 
-Flow:
+Enqueues job into BullMQ
 
-Validate request body (tokenIn, tokenOut, amount)
+WebSocket Status Updates
 
-Insert a new order into PostgreSQL with status = pending
+ws://localhost:3000/api/orders/execute?orderId=<uuid>
 
-Enqueue the order into BullMQ (orders queue)
+Streams lifecycle events: pending → routing → building → submitted → confirmed/failed
 
-Respond with { orderId, status: "pending" }
+DEX Routing (Mock)
 
-2. WebSocket Status Updates
+Simulated Raydium/Meteora quotes
 
-Clients connect to:
+Price variance of 2–5%
 
-ws://<host>:3000/api/orders/execute?orderId=<uuid>
+Best-price selection
 
+Simulated swap execution with final price and transaction hash
 
-Status lifecycle events:
-
-pending
-
-routing (comparing Raydium/Meteora)
-
-building (constructing mock transaction)
-
-submitted (sent for execution)
-
-confirmed (includes executedPrice and txHash)
-
-failed (includes error message, after retry exhaustion)
-
-3. Mock DEX Router
-
-Simulates DEX behavior:
-
-200–400 ms delay for price quotes
-
-2–5% random price variance
-
-Automatic best-price selection (Raydium vs Meteora)
-
-Executes mock swap with 2–3 second delay
-
-Slippage checks using MAX_SLIPPAGE_BPS
-
-4. Queue Processor (BullMQ)
-
-Queue name: orders
+Queue Execution
 
 Worker concurrency: 10
 
-Three retry attempts with exponential backoff
+Automatic retries (3 attempts)
 
-Failures are persisted with detailed reasons
+Failure reasons stored in database
 
-Worker emits WebSocket status updates for each lifecycle stage
+Data Persistence
+Each order stores:
+type, token pair, status, DEX used, executed price, txHash, timestamps.
 
-5. Database (PostgreSQL)
+Supported Order Type
 
-Each order record contains:
+Market Order
+Selected for simplicity and completeness of workflow demonstration.
 
-Order type
+Extendability
 
-Token pair & amount
+Limit Orders: evaluate price conditions before queueing.
 
-Status transitions
+Sniper Orders: trigger execution upon token launch or new pool creation.
 
-Selected DEX
+Tech Stack
 
-Executed price
+Node.js, TypeScript
 
-Transaction hash
+Fastify (HTTP + WebSocket)
 
-Failure reason (if applicable)
+BullMQ + Redis
 
-Created/updated timestamps
+PostgreSQL
 
-Project Structure
-src/
-  config.ts
-  server.ts
-  db.ts
+Jest (unit/integration tests)
 
-  routes/
-    orderRoute.ts
-
-  services/
-    orderService.ts
-    dexRouter.ts
-
-  queue/
-    orderQueue.ts
-    orderWorker.ts
-
-  websocket/
-    orderWs.ts
-
-  models/
-    orderModel.ts
-
-tests/                // unit + integration tests
-postman_collection.json
-README.md
-.env.example
-
-Local Setup
-1. Clone the Repository
-git clone <your-repo-url> dex-execution-engine
-cd dex-execution-engine
+Installation
 npm install
 
-2. Start Redis and PostgreSQL Using Docker
+
+Start Redis and PostgreSQL (example using Docker):
+
 docker run --name dex-redis -p 6379:6379 -d redis:7
 
 docker run --name dex-postgres \
@@ -161,134 +94,50 @@ docker run --name dex-postgres \
   -p 5432:5432 \
   -d postgres:16
 
-3. Create .env
-PORT=3000
 
-# Redis
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
+Run the development server:
 
-# PostgreSQL
-PGHOST=127.0.0.1
-PGPORT=5432
-PGUSER=postgres
-PGPASSWORD=postgres
-PGDATABASE=dex_engine
-
-# Mock pricing config
-BASE_PRICE_SOL_USDC=150
-MAX_SLIPPAGE_BPS=100
-
-4. Start the Development Server
 npm run dev
 
+Usage
 
-Server runs at:
+Submit an order:
 
-http://localhost:3000
-
-How to Use
-1. Create a Market Order (HTTP request)
 curl -X POST http://localhost:3000/api/orders/execute \
   -H "Content-Type: application/json" \
   -d '{"tokenIn":"SOL","tokenOut":"USDC","amount":1}'
 
 
-Example response:
+Listen to WebSocket updates:
 
-{
-  "orderId": "3668bd16-f439-4b1f-a454-19d3636823ac",
-  "status": "pending"
-}
-
-2. Listen to WebSocket Updates
-
-Using wscat:
-
-wscat -c "ws://localhost:3000/api/orders/execute?orderId=<orderId>"
+wscat -c "ws://localhost:3000/api/orders/execute?orderId=<uuid>"
 
 
-Expected output sequence:
+Query database:
 
-{"status":"pending"}
-{"status":"routing"}
-{"status":"building"}
-{"status":"submitted"}
-{"status":"confirmed","data":{"dex":"meteora","executedPrice":150.03,"txHash":"0xabc..."}}
-
-3. Inspect Database Results
-
-Connect to Postgres:
-
-docker exec -it dex-postgres psql -U postgres -d dex_engine
-
-
-Check recent orders:
-
-SELECT id, status, selected_dex, executed_price, tx_hash
-FROM orders
-ORDER BY created_at DESC;
+SELECT * FROM orders ORDER BY created_at DESC;
 
 Testing
-
-Tests should validate:
-
-DEX router logic
-
-Quote variance and slippage
-
-Order queue behavior (success, retry, failure)
-
-Correct WebSocket events emitted
-
-Database persistence
-
-API validation rules
-
-Place tests inside the tests/ directory:
-
 npm test
 
-Postman Collection
 
-A Postman/Insomnia collection is included:
+Includes routing logic tests, queue behavior tests, and WebSocket lifecycle tests.
 
+Repository Structure
+src/
+  config.ts
+  server.ts
+  db.ts
+  routes/
+  services/
+  queue/
+  websocket/
+  models/
+tests/
 postman_collection.json
-
-
-It contains:
-
-POST /api/orders/execute
-
-WebSocket request for lifecycle updates
+.env.example
 
 Deployment
 
-Recommended platforms:
-
-Railway
-
-Render
-
-Fly.io
-
-DigitalOcean Apps
-
-Required services in production:
-
-Node.js server
-
-Managed PostgreSQL
-
-Managed Redis
-
-Environment variables matching .env
-
-Build command:
-
-npm run build
-
-
-Start command:
-
-npm run start
+Compatible with Railway, Render, Fly.io, or any Node.js environment.
+Requires provisioned PostgreSQL, Redis, and environment variables matching .env.example.
